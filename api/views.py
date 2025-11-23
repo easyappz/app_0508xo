@@ -45,7 +45,7 @@ class RegisterView(APIView):
         token = AuthToken.create_for_member(member)
 
         member_data = MemberSerializer(member).data
-        response_data = {**member_data, "token": token.key}
+        response_data = {"member": member_data, "token": token.key}
         return Response(response_data, status=status.HTTP_201_CREATED)
 
 
@@ -67,7 +67,7 @@ class LoginView(APIView):
         token = AuthToken.create_for_member(member)
 
         member_data = MemberSerializer(member).data
-        response_data = {**member_data, "token": token.key}
+        response_data = {"member": member_data, "token": token.key}
         return Response(response_data, status=status.HTTP_200_OK)
 
 
