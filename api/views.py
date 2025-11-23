@@ -1,11 +1,12 @@
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
-from rest_framework import permissions, status
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import AuthToken, Member
+from .models import AuthToken, Member, Message
 from .serializers import (
+    HelloMessageSerializer,
     LoginSerializer,
     MemberSerializer,
     MessageSerializer,
@@ -17,11 +18,12 @@ class HelloView(APIView):
     """A simple API endpoint that returns a greeting message."""
 
     @extend_schema(
-        responses={200: MessageSerializer}, description="Get a hello world message"
+        responses={200: HelloMessageSerializer},
+        description="Get a hello world message",
     )
     def get(self, request):
         data = {"message": "Hello!", "timestamp": timezone.now()}
-        serializer = MessageSerializer(data)
+        serializer = HelloMessageSerializer(data)
         return Response(serializer.data)
 
 
@@ -82,3 +84,34 @@ class ProfileView(APIView):
         member: Member = request.user
         serializer = MemberSerializer(member)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MessageListCreateView(generics.ListCreateAPIView):
+    """List all chat messages or create a new one in the global group chat."""
+
+    serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Message.objects.select_related("member").order_by("created_at")
+        limit_param = self.request.query_params.get("limit")
+        if not limit_param:
+            return queryset
+
+        try:
+            limit = int(limit_param)
+        except (TypeError, ValueError):
+            return queryset
+
+        if limit <= 0:
+            return queryset
+
+        total = queryset.count()
+        if total <= limit:
+            return queryset
+
+        start = total - limit
+        return queryset[start:]
+
+    def perform_create(self, serializer):
+        serializer.save(member=self.request.user)

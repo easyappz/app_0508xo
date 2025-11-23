@@ -1,10 +1,10 @@
 from rest_framework import serializers
 
-from .models import Member
+from .models import Member, Message
 from .utils import hash_password, verify_password
 
 
-class MessageSerializer(serializers.Serializer):
+class HelloMessageSerializer(serializers.Serializer):
     message = serializers.CharField(max_length=200)
     timestamp = serializers.DateTimeField(read_only=True)
 
@@ -60,3 +60,17 @@ class LoginSerializer(serializers.Serializer):
 
         attrs["member"] = member
         return attrs
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    member_username = serializers.CharField(source="member.username", read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ("id", "member_username", "text", "created_at")
+        read_only_fields = ("id", "member_username", "created_at")
+
+    def validate_text(self, value: str) -> str:
+        if not value or not value.strip():
+            raise serializers.ValidationError("Text cannot be empty.")
+        return value

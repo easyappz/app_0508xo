@@ -34,3 +34,15 @@ class AuthToken(models.Model):
         """Helper to create a new token instance for the given member."""
         key = cls.generate_key()
         return cls.objects.create(member=member, key=key)
+
+
+class Message(models.Model):
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="messages")
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        preview = self.text[:30]
+        if len(self.text) > 30:
+            preview += "..."
+        return f"{self.member.username}: {preview}"
