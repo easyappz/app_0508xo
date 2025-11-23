@@ -2,5 +2,175 @@ openapi: 3.1.0
 info:
   title: My API
   version: 1.0.0
-paths: {}
-components: {}
+security:
+  - bearerAuth: []
+paths:
+  /api/register/:
+    post:
+      summary: User registration (Member creation)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+      responses:
+        '201':
+          description: Registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error
+      security: []
+  /api/login/:
+    post:
+      summary: Member login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid credentials
+      security: []
+  /api/profile/:
+    get:
+      summary: Get current authenticated member profile
+      responses:
+        '200':
+          description: Current member profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '401':
+          description: Unauthorized
+      security:
+        - bearerAuth: []
+  /api/messages/:
+    get:
+      summary: Get list of chat messages
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: Optional limit for the number of most recent messages to return.
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '401':
+          description: Unauthorized
+      security:
+        - bearerAuth: []
+    post:
+      summary: Create a new chat message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+      responses:
+        '201':
+          description: Message created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+      security:
+        - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Member:
+      type: object
+      required:
+        - id
+        - username
+        - created_at
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    AuthResponse:
+      type: object
+      required:
+        - member
+        - token
+      properties:
+        member:
+          $ref: '#/components/schemas/Member'
+        token:
+          type: string
+          description: Bearer token to be sent in the Authorization header.
+    Message:
+      type: object
+      required:
+        - id
+        - member_username
+        - text
+        - created_at
+      properties:
+        id:
+          type: integer
+        member_username:
+          type: string
+        text:
+          type: string
+        created_at:
+          type: string
+          format: date-time
